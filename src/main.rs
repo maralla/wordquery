@@ -8,7 +8,7 @@ use std::io;
 use std::str::FromStr;
 use std::time;
 
-use errors::*;
+use errors::{Error, Result};
 use token::TokenStore;
 
 mod errors;
