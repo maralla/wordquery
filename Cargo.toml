@@ -1,0 +1,12 @@
+[package]
+name = "wordquery"
+version = "0.1.0"
+authors = ["maralla <maralla.ai@gmail.com>"]
+
+[[bin]]
+name = "wq"
+path = "src/main.rs"
+
+[dependencies]
+lazy_static = "0.1.*"
+regex = "0.1"
