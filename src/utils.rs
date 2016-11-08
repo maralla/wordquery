@@ -6,6 +6,8 @@ pub fn is_subseq(src: &str, target: &str) -> (i32, bool) {
         None => return (0, false),
     };
 
+    let mut prev = -1;
+
     for (i, c) in target.char_indices() {
         if c.len_utf8() != ch.len_utf8() {
             continue;
@@ -18,7 +20,15 @@ pub fn is_subseq(src: &str, target: &str) -> (i32, bool) {
             .is_none() {
             match i {
                 0 => score = -999,
-                _ => score += i as i32,
+                _ => {
+                    let pos = i as i32;
+                    if pos - 1 == prev {
+                        score += -9;
+                    } else {
+                        score += pos;
+                    }
+                    prev = pos;
+                }
             }
 
             match src_iter.next() {
@@ -36,8 +46,12 @@ fn test_subseq() {
     assert_eq!(is_subseq("", "world"), (0, false));
 
     assert_eq!(is_subseq("w", "world"), (-999, true));
-    assert_eq!(is_subseq("wld", "world"), (-992, true));
+    assert_eq!(is_subseq("wld", "world"), (-1005, true));
     assert_eq!(is_subseq("d", "world"), (4, true));
     assert_eq!(is_subseq("od", "world"), (5, true));
     assert_eq!(is_subseq("Od", "world"), (5, true));
+
+    assert_eq!(is_subseq("or", "world"), (-8, true));
+    assert_eq!(is_subseq("or", "wwwwwwwwwwwwworld"), (4, true));
+    assert_eq!(is_subseq("or", "wowwwwwwwwwwwwrld"), (15, true));
 }

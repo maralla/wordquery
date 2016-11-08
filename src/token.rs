@@ -50,8 +50,8 @@ fn test_search() {
     store.add_file("tests/test.txt").unwrap();
     assert_eq!(store.search("oc"),
                [(-997, "odchodzi"),
+                (-7, "amochodowego"),
                 (5, "Gorycz"),
-                (5, "amochodowego"),
                 (6, "mogąc"),
                 (8, "społeczeństwa")])
 }

@@ -98,7 +98,7 @@ impl Manager {
         if q.is_empty() {
             return Err(Error::new("empty query"));
         }
-        let res = self.store.search(q).iter().map(|&(_, w)| w).collect::<Vec<&str>>().join("\n");
+        let res = self.store.search(q).iter().map(|&(_, w)| w).collect::<Vec<&str>>().join("||");
         println!("{}", res);
         Ok(())
     }
@@ -133,7 +133,7 @@ impl Manager {
         let out = res.into_iter()
             .map(|(_, (n, s))| format!("{},,{}", n.to_str().unwrap(), s))
             .collect::<Vec<String>>()
-            .join("\n");
+            .join("||");
         println!("{}", out);
         Ok(())
     }
