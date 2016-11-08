@@ -98,7 +98,7 @@ impl Manager {
         if q.is_empty() {
             return Err(Error::new("empty query"));
         }
-        let res = self.store.search(q).iter().map(|&(_, w)| w).collect::<Vec<&str>>().join(",,");
+        let res = self.store.search(q).iter().map(|&(_, w)| w).collect::<Vec<&str>>().join("\n");
         println!("{}", res);
         Ok(())
     }
