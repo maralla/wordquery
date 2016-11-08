@@ -4,6 +4,7 @@ use std::io::Read;
 
 use errors::Result;
 use regex::Regex;
+use utils;
 
 lazy_static! {
     static ref WORD: Regex = Regex::new(r"[^\W\d]{3,}\w*").unwrap();
@@ -16,38 +17,6 @@ pub struct TokenStore {
 impl TokenStore {
     pub fn new() -> TokenStore {
         TokenStore { db: BTreeSet::new() }
-    }
-
-    fn test_subseq(src: &str, target: &str) -> (i32, bool) {
-        let mut score = 0;
-        let mut src_iter = src.chars();
-        let mut ch = match src_iter.next() {
-            Some(e) => e,
-            None => return (0, false),
-        };
-
-        for (i, c) in target.char_indices() {
-            if c.len_utf8() != ch.len_utf8() {
-                continue;
-            }
-
-            if c.to_lowercase()
-                .zip(ch.to_lowercase())
-                .filter(|&(s, t)| s != t)
-                .next()
-                .is_none() {
-                match i {
-                    0 => score = -999,
-                    _ => score += i as i32,
-                }
-
-                match src_iter.next() {
-                    Some(c) => ch = c,
-                    None => return (score, true),
-                }
-            }
-        }
-        (0, false)
     }
 
     pub fn add_file(&mut self, name: &str) -> Result<()> {
@@ -66,7 +35,7 @@ impl TokenStore {
     pub fn search(&self, src: &str) -> Vec<(i32, &str)> {
         let mut res = self.db
             .iter()
-            .map(|e| (Self::test_subseq(src, e), e as &str))
+            .map(|e| (utils::is_subseq(src, e), e as &str))
             .filter(|&((_, s), _)| s)
             .map(|((s, _), e)| (s, e))
             .collect::<Vec<(i32, &str)>>();
@@ -85,16 +54,4 @@ fn test_search() {
                 (5, "amochodowego"),
                 (6, "mogąc"),
                 (8, "społeczeństwa")])
-}
-
-#[test]
-fn test_subseq() {
-    assert_eq!(TokenStore::test_subseq("wop", "world"), (0, false));
-    assert_eq!(TokenStore::test_subseq("", "world"), (0, false));
-
-    assert_eq!(TokenStore::test_subseq("w", "world"), (-999, true));
-    assert_eq!(TokenStore::test_subseq("wld", "world"), (-992, true));
-    assert_eq!(TokenStore::test_subseq("d", "world"), (4, true));
-    assert_eq!(TokenStore::test_subseq("od", "world"), (5, true));
-    assert_eq!(TokenStore::test_subseq("Od", "world"), (5, true));
 }

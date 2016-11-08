@@ -5,6 +5,7 @@ extern crate regex;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
+use std::path::{self, Path};
 use std::str::FromStr;
 use std::time;
 
@@ -13,6 +14,7 @@ use token::TokenStore;
 
 mod errors;
 mod token;
+mod utils;
 
 enum AddType {
     Text,
@@ -87,7 +89,7 @@ impl Manager {
                 try!(Self::add_content(&mut self.file_map, &mut self.store, add_type, &data[3..]));
             }
             QueryType::Buffer => try!(self.query_buffer(data)),
-            QueryType::File => {}
+            QueryType::File => try!(self.list_file(data)),
         }
         Ok(())
     }
@@ -98,6 +100,41 @@ impl Manager {
         }
         let res = self.store.search(q).iter().map(|&(_, w)| w).collect::<Vec<&str>>().join(",,");
         println!("{}", res);
+        Ok(())
+    }
+
+    fn list_file(&self, q: &str) -> Result<()> {
+        let (dirname, basename) = path_split(q);
+
+        let mut res = Vec::new();
+        for entry in try!(dirname.read_dir()) {
+            let e = try!(entry);
+            let name = e.file_name();
+            let (score, is_subseq) = {
+                let n = try!(name.to_str().ok_or_else(|| Error::new("invalid filename")));
+                utils::is_subseq(basename, n)
+            };
+            if !basename.is_empty() && !is_subseq {
+                continue;
+            }
+            let sign = {
+                let filetype = try!(e.file_type());
+                if filetype.is_symlink() {
+                    "sym"
+                } else if filetype.is_dir() {
+                    "dir"
+                } else {
+                    "file"
+                }
+            };
+            res.push((score, (name, sign)));
+        }
+        res.sort_by_key(|&(s, (ref n, _))| (s, n.len()));
+        let out = res.into_iter()
+            .map(|(_, (n, s))| format!("{},,{}", n.to_str().unwrap(), s))
+            .collect::<Vec<String>>()
+            .join("\n");
+        println!("{}", out);
         Ok(())
     }
 
@@ -121,6 +158,20 @@ impl Manager {
     }
 }
 
+fn path_split(p: &str) -> (&Path, &str) {
+    let path = Path::new(p);
+    if p.ends_with(path::MAIN_SEPARATOR) {
+        (path, "")
+    } else {
+        (path.parent().unwrap_or(path),
+         path.file_name()
+            .iter()
+            .flat_map(|e| e.to_str())
+            .next()
+            .unwrap_or(""))
+    }
+}
+
 fn main() {
     let mut manager = Manager::new();
     loop {
@@ -128,4 +179,12 @@ fn main() {
             println!("Err: {}", e);
         }
     }
+}
+
+#[test]
+fn test_path_split() {
+    assert_eq!(path_split("/"), (Path::new("/"), ""));
+    assert_eq!(path_split("/etc"), (Path::new("/"), "etc"));
+    assert_eq!(path_split("/etc/"), (Path::new("/etc"), ""));
+    assert_eq!(path_split("/etc/a"), (Path::new("/etc"), "a"));
 }
